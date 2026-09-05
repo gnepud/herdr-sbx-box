@@ -1,0 +1,65 @@
+schemaVersion: "2"
+kind: mixin
+name: agy
+displayName: Antigravity CLI (agy)
+description: >-
+  Add Google's Antigravity CLI (agy) in YOLO mode to an existing Docker Sandbox.
+  First run prints a Google OAuth URL to complete in your local browser; credentials
+  persist across sandbox restarts.
+
+permissions:
+  network:
+    allow:
+      - "**"
+    # CLI installer + self-update manifests and binaries
+    #- "antigravity.google:443"
+    #- "antigravity-unleash.goog:443"
+    #- "antigravity-cli-auto-updater-974169037036.us-central1.run.app:443"
+    # Google OAuth (sign-in + token exchange)
+    #- "accounts.google.com:443"
+    #- "oauth2.googleapis.com:443"
+    #- "www.googleapis.com:443"
+    # Antigravity / Gemini Code Assist model + agent APIs
+    #- "cloudaicompanion.googleapis.com:443"
+    #- "cloudcode-pa.googleapis.com:443"
+    #- "daily-cloudcode-pa.googleapis.com:443"
+    #- "generativelanguage.googleapis.com:443"
+
+environment:
+  variables:
+    # agy detects SSH/remote environments and switches to a copy/paste OAuth flow
+    # (prints a URL, you paste the callback URL back). Force that path so the
+    # CLI never tries to spawn a local browser inside the sandbox.
+    SSH_CONNECTION: "sandbox 0 sandbox 0"
+
+setup:
+  install:
+    - command: "curl -fsSL https://antigravity.google/cli/install.sh | bash"
+      user: "1000"
+      description: Install the Antigravity CLI (agy) into ~/.local/bin
+  files:
+    - path: /home/agent/.gemini/antigravity-cli/settings.json
+      content: |
+        {
+          "agentMode": "accept-edits",
+          "artifactReviewMode": "always-proceed",
+          "fileAccessPolicy": "allow",
+          "internetAccessPolicy": "allow",
+          "nonWorkspaceFileAccess": "allow",
+          "permissions": {
+            "allow": [
+              "command(*)",
+              "execute_url(*)",
+              "mcp(*)",
+              "read_file(*)",
+              "read_url(*)",
+              "unsandboxed(*)",
+              "write_file(*)"
+            ]
+          },
+          "toolExecutionPolicy": "always-proceed",
+          "trustedWorkspaces": ["${WORKDIR}"]
+        }
+      mode: "0600"
+      onlyIfMissing: true
+      description: Seed permissive Antigravity settings for sandboxed operation

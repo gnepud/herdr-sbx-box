@@ -1,0 +1,102 @@
+schemaVersion: "2"
+kind: mixin
+name: codex
+displayName: Codex CLI
+description: >-
+  Add OpenAI Codex CLI in YOLO mode to an existing Docker Sandbox.
+sourceURL: https://github.com/openai/codex
+licenses:
+  - Apache-2.0
+
+permissions:
+  network:
+    allow:
+      - "**"
+      # OpenAI API and authentication
+      #- "api.openai.com:443"
+      #- "openai.com:443"
+      #- "chatgpt.com:443"
+      #- "auth.openai.com:443"
+      #- "registry.npmjs.org:443"
+
+environment:
+  variables:
+    BROWSER: xdg-open
+    CODEX_HOME: /home/agent/.codex
+    GIT_TERMINAL_PROMPT: "0"
+
+setup:
+  install:
+    - command: |
+        set -eu
+        npm config set proxy "$HTTP_PROXY"
+        npm config set https-proxy "$HTTPS_PROXY"
+        npm install -g --no-fund --no-audit @openai/codex
+        codex --version
+      user: "1000"
+      description: Install OpenAI Codex CLI from official npm package
+  startup:
+    - command:
+        - bash
+        - -c
+        - |
+          set -e
+          mkdir -p /home/agent/.codex /home/agent/.agents
+          MODE="${SBX_CRED_OPENAI_MODE:-none}"
+
+          # 1. Base YOLO configuration
+          cat > /home/agent/.codex/config.toml << 'EOF'
+          # Codex configuration for Docker sandbox
+          # This configuration enables "yolo mode" - no approvals, full access
+          approval_policy = "never"
+          sandbox_mode = "danger-full-access"
+          mcp_oauth_credentials_store = "file"
+          EOF
+
+          case "$MODE" in
+            oauth|apikey)
+              echo 'forced_login_method = "api"' >> /home/agent/.codex/config.toml
+              ;;
+          esac
+
+          if [ "$MODE" = "oauth" ]; then
+            cat >> /home/agent/.codex/config.toml << 'EOF'
+          model_provider = "sandboxd"
+          [model_providers.sandboxd]
+          name = "Sandbox Proxy"
+          base_url = "https://chatgpt.com/backend-api/codex"
+          experimental_bearer_token = "oai-oat01-proxy-managed"
+          requires_openai_auth = false
+          EOF
+          fi
+
+          # 2. Seed ~/.codex/auth.json for proxy injection or clean up if mode is none
+          case "$MODE" in
+            oauth|apikey)
+              cat > /home/agent/.codex/auth.json << 'EOF'
+          {
+            "OPENAI_API_KEY": "proxy-managed"
+          }
+          EOF
+              ;;
+            *)
+              rm -f /home/agent/.codex/auth.json
+              ;;
+          esac
+
+          # 3. Register sandbox MCP gateway if active
+          if [ -n "${MCP_GATEWAY_URL:-}" ]; then
+            cfg="/home/agent/.codex/config.toml"
+            if ! grep -q "^\[mcp_servers\.mcp-gateway\]" "$cfg" 2>/dev/null; then
+              cat >> "$cfg" << EOF
+
+          [mcp_servers.mcp-gateway]
+          type = "http"
+          url = "$MCP_GATEWAY_URL"
+          [mcp_servers.mcp-gateway.headers]
+          Authorization = "Bearer ${MCP_SENTINEL_TOKEN_NAME:-}"
+          EOF
+            fi
+          fi
+      user: "1000"
+      description: Configure Codex YOLO mode, OpenAI authentication, and MCP gateway

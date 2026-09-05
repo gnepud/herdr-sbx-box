@@ -1,0 +1,67 @@
+schemaVersion: "2"
+kind: mixin
+name: pi
+displayName: pi
+description: >-
+  Add the pi coding agent to an existing Docker Sandbox, with API key injection
+  managed by the host-side proxy.
+sourceURL: https://github.com/earendil-works/pi
+licenses:
+  - Apache-2.0
+
+permissions:
+  network:
+    allow:
+      - "**"
+      #- registry.npmjs.org
+      #- openrouter.ai
+      #- api.deepseek.com
+      #- api.xiaomimimo.com
+
+credentials:
+  - service: openrouter
+    description: OpenRouter API key (https://openrouter.ai/keys)
+    required: false
+    apiKey:
+      name: OPENROUTER_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: openrouter.ai
+          header: Authorization
+          format: "Bearer %s"
+  - service: deepseek
+    description: DeepSeek API key
+    required: false
+    apiKey:
+      name: DEEPSEEK_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.deepseek.com
+          header: Authorization
+          format: "Bearer %s"
+  - service: xiaomi
+    description: Xiaomi API key
+    required: false
+    apiKey:
+      name: XIAOMI_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.xiaomimimo.com
+          header: Authorization
+          format: "Bearer %s"
+
+environment:
+  variables:
+    PI_SANDBOX: docker-sbx
+
+setup:
+  install:
+    - command: |
+        set -eu
+        npm config set proxy "$HTTP_PROXY"
+        npm config set https-proxy "$HTTPS_PROXY"
+        npm install -g --no-fund --no-audit bun
+        npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+        pi --version
+      user: "1000"
+      description: Install pi from its official npm package

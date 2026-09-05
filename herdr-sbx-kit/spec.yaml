@@ -1,0 +1,167 @@
+schemaVersion: "2"
+kind: sandbox
+name: herdr
+displayName: herdr
+description: Run the Herdr inside a Docker Sandbox.
+sourceURL: https://github.com/herdrdev/herdr
+licenses:
+  - Apache-2.0
+
+sandbox:
+  image: docker/sandbox-templates:shell-docker
+  entrypoint: [herdr]
+
+permissions:
+  network:
+    allow:
+      - "**"
+      # Herdr installer manifest and GitHub release binaries
+      #- "herdr.dev:443"
+      #- "github.com:443"
+      #- "objects.githubusercontent.com:443"
+
+credentials:
+  - service: antigravity
+    description: Google OAuth session used by Antigravity CLI
+    oauth:
+      tokenEndpoint:
+        host: oauth2.googleapis.com
+        path: /token
+      resourceHosts:
+        - cloudaicompanion.googleapis.com
+        - cloudcode-pa.googleapis.com
+        - daily-cloudcode-pa.googleapis.com
+        - generativelanguage.googleapis.com
+        - www.googleapis.com
+      sentinels:
+        accessToken: agy-oauth-access-proxy-managed
+        refreshToken: agy-oauth-refresh-proxy-managed
+      credentialFile:
+        path: "~/.gemini/antigravity-cli/antigravity-oauth-token"
+        template: '{"token":{"access_token":"{{.AccessToken}}","token_type":"Bearer","refresh_token":"{{.RefreshToken}}","expiry":"9999-12-31T23:59:59Z"},"auth_method":"consumer"}'
+  - service: openai
+    description: OpenAI API key or ChatGPT OAuth session used by Codex
+    required: false
+    apiKey:
+      name: OPENAI_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.openai.com
+          header: Authorization
+          format: "Bearer %s"
+        - domain: openai.com
+          header: Authorization
+          format: "Bearer %s"
+    oauth:
+      tokenEndpoint:
+        host: auth.openai.com
+        path: /oauth/token
+      resourceHosts:
+        - chatgpt.com
+      sentinels:
+        accessToken: oai-oat01-proxy-managed
+        refreshToken: oai-ort01-proxy-managed
+      skipIfEnv:
+        - OPENAI_API_KEY
+  - service: anthropic
+    description: Anthropic API key or Claude OAuth session used by Claude Code
+    required: false
+    apiKey:
+      name: ANTHROPIC_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.anthropic.com
+          header: x-api-key
+          format: "%s"
+        - domain: console.anthropic.com
+          header: x-api-key
+          format: "%s"
+        - domain: claude.ai
+          header: x-api-key
+          format: "%s"
+        - domain: mcp-proxy.anthropic.com
+          header: x-api-key
+          format: "%s"
+    oauth:
+      tokenEndpoint:
+        host: platform.claude.com
+        path: /v1/oauth/token
+      sentinels:
+        accessToken: sk-ant-oat01-proxy-managed
+        refreshToken: sk-ant-ort01-proxy-managed
+      credentialFile:
+        path: "~/.claude/.credentials.json"
+        template: '{"claudeAiOauth":{"accessToken":"{{.AccessToken}}","refreshToken":"{{.RefreshToken}}","expiresAt":{{.ExpiresAt}},"scopes":{{.ScopesJSON}}}{{if .PrimaryApiKey}},"primaryApiKey":"{{.PrimaryApiKey}}"{{end}}}'
+      skipIfEnv:
+        - ANTHROPIC_API_KEY
+
+environment:
+  variables:
+    SHELL: /bin/bash
+
+setup:
+  install:
+    - command: |
+        set -eu
+        curl -fsSL https://herdr.dev/install.sh | sh
+        herdr --version
+      user: "1000"
+      description: Install herdr into ~/.local/bin
+  startup:
+    - command:
+        - bash
+        - -c
+        - |
+          export PATH="/home/agent/.local/bin:/usr/local/share/npm-global/bin:$PATH"
+          if command -v codex >/dev/null 2>&1; then
+            mkdir -p "$HOME/.codex"
+            herdr integration install codex
+          fi
+          if command -v pi >/dev/null 2>&1; then
+            mkdir -p "$HOME/.pi/agent/extensions"
+            herdr integration install pi
+          fi
+          if command -v agy >/dev/null 2>&1; then
+            mkdir -p "$HOME/.gemini/config"
+            herdr integration install antigravity-cli
+          fi
+          if command -v claude >/dev/null 2>&1; then
+            mkdir -p "$HOME/.claude"
+            herdr integration install claude
+          fi
+      user: "1000"
+      description: Auto-configure Herdr integrations for installed agents
+  files:
+    - path: /home/agent/.config/herdr/config.toml
+      content: |
+        [terminal]
+        default_shell = "/bin/bash"
+      mode: "0644"
+      onlyIfMissing: true
+      description: Configure default shell for Herdr panes
+    - path: /home/agent/.bashrc
+      content: |
+        # Source the sandbox persistent environment file
+        if [ -f /etc/sandbox-persistent.sh ]; then
+            . /etc/sandbox-persistent.sh
+        fi
+
+        export BASH_ENV=/etc/sandbox-persistent.sh
+        alias ls='ls --color=auto'
+        PS1='\u@\h:\W\$ '
+
+        # Enable bash completion
+        if ! shopt -oq posix; then
+          if [ -f /usr/share/bash-completion/bash_completion ]; then
+              . /usr/share/bash-completion/bash_completion
+          elif [ -f /etc/bash_completion ]; then
+              . /etc/bash_completion
+          fi
+        fi
+
+        # Enable herdr completion
+        if command -v herdr >/dev/null 2>&1; then
+            eval "$(herdr completion bash 2>/dev/null || true)"
+        fi
+      mode: "0644"
+      description: Enable bash-completion and herdr completion

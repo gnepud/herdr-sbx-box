@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "sbx": {
+      "source": "shelajev/sbx-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "24b17aa55d5561ad85e4ffb30dfcd4b23f228bb562263820099323e3943b24a6"
+    }
+  }
+}

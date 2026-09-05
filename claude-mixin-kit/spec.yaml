@@ -1,0 +1,86 @@
+schemaVersion: "2"
+kind: mixin
+name: claude
+displayName: Claude Code CLI
+description: >-
+  Add Anthropic's Claude Code CLI in YOLO mode to an existing Docker Sandbox.
+sourceURL: https://github.com/anthropics/claude-code
+licenses:
+  - Apache-2.0
+
+permissions:
+  network:
+    allow:
+      - "**"
+      # Anthropic API and Claude platform
+      #- "api.anthropic.com:443"
+      #- "console.anthropic.com:443"
+      #- "claude.ai:443"
+      #- "platform.claude.com:443"
+      #- "mcp-proxy.anthropic.com:443"
+      #- "bridge.claudeusercontent.com:443"
+      #- "statsig.anthropic.com:443"
+      #- "registry.npmjs.org:443"
+
+environment:
+  variables:
+    IS_SANDBOX: "1"
+    CLAUDE_ENV_FILE: /etc/sandbox-persistent.sh
+
+setup:
+  install:
+    - command: |
+        set -eu
+        curl -fsSL https://claude.ai/install.sh | bash
+        /home/agent/.local/bin/claude --version
+      user: "1000"
+      description: Install Claude Code CLI standalone binary into ~/.local/bin
+  startup:
+    - command:
+        - bash
+        - -c
+        - |
+          # 1. Seed trust and onboarding flags in ~/.claude.json
+          ws="${WORKSPACE_DIR:-/home/agent/workspace}"
+          if [ ! -f /home/agent/.claude.json ]; then
+            cat > /home/agent/.claude.json << EOF
+          {
+            "bypassPermissionsModeAccepted": true,
+            "hasCompletedOnboarding": true,
+            "projects": {
+              "/": { "hasTrustDialogAccepted": true },
+              "/home/agent": { "hasTrustDialogAccepted": true },
+              "$ws": { "hasTrustDialogAccepted": true }
+            }
+          }
+          EOF
+          else
+            jq --arg ws "$ws" '.bypassPermissionsModeAccepted = true | .hasCompletedOnboarding = true | .projects["/"] = {"hasTrustDialogAccepted": true} | .projects["/home/agent"] = {"hasTrustDialogAccepted": true} | .projects[$ws] = {"hasTrustDialogAccepted": true}' \
+              /home/agent/.claude.json > /home/agent/.claude.json.tmp && mv /home/agent/.claude.json.tmp /home/agent/.claude.json
+          fi
+
+          # 2. Seed YOLO mode and API key helper in ~/.claude/settings.json
+          mkdir -p /home/agent/.claude
+          if [ ! -f /home/agent/.claude/settings.json ]; then
+            echo '{}' > /home/agent/.claude/settings.json
+          fi
+
+          HELPER_JSON='{}'
+          if [ "${SBX_CRED_ANTHROPIC_MODE:-none}" != "none" ]; then
+            HELPER_JSON='{"apiKeyHelper": "echo proxy-managed"}'
+          fi
+
+          jq -s '.[0] * .[1] * .[2]' \
+            /home/agent/.claude/settings.json \
+            <(echo '{"themeId": 1, "alwaysThinkingEnabled": true, "defaultMode": "bypassPermissions", "bypassPermissionsModeAccepted": true}') \
+            <(echo "$HELPER_JSON") > /home/agent/.claude/settings.json.tmp && mv /home/agent/.claude/settings.json.tmp /home/agent/.claude/settings.json
+
+          # 3. Add shell alias for YOLO mode
+          if [ -f /etc/sandbox-persistent.sh ] && ! grep -q "alias claude=" /etc/sandbox-persistent.sh 2>/dev/null; then
+            echo "alias claude='claude --dangerously-skip-permissions'" >> /etc/sandbox-persistent.sh
+          fi
+          if [ -f /home/agent/.bashrc ] && ! grep -q "alias claude=" /home/agent/.bashrc 2>/dev/null; then
+            echo "alias claude='claude --dangerously-skip-permissions'" >> /home/agent/.bashrc
+          fi
+      user: "1000"
+      description: Configure Claude Code trust flags, YOLO mode, and authentication helper
