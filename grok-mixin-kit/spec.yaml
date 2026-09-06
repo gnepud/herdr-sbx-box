@@ -1,0 +1,70 @@
+schemaVersion: "2"
+kind: mixin
+name: grok
+displayName: Grok Build CLI
+description: >-
+  Add xAI's Grok Build CLI in YOLO mode to an existing Docker Sandbox.
+  Supports OAuth via auth.x.ai (browser or device code) and API Key (XAI_API_KEY).
+sourceURL: https://github.com/xai-org/grok-build
+licenses:
+  - Apache-2.0
+
+permissions:
+  network:
+    allow:
+      - "**"
+      # xAI API, Grok OAuth and artifacts
+      #- "api.x.ai:443"
+      #- "auth.x.ai:443"
+      #- "accounts.x.ai:443"
+      #- "x.ai:443"
+      #- "storage.googleapis.com:443"
+
+environment:
+  variables:
+    GROK_HOME: /home/agent/.grok
+    GROK_LOGIN_DEVICE_FLOW: "1"
+    GROK_DEFAULT_PERMISSION_MODE: always-approve
+    GROK_SANDBOX_AUTO_ALLOW_BASH: "1"
+
+setup:
+  install:
+    - command: |
+        set -eu
+        curl -fsSL https://x.ai/cli/install.sh | bash
+        mkdir -p /home/agent/.local/bin
+        ln -sf /home/agent/.grok/bin/grok /home/agent/.local/bin/grok
+        ln -sf /home/agent/.grok/bin/agent /home/agent/.local/bin/agent
+        /home/agent/.grok/bin/grok --version
+      user: "1000"
+      description: Install xAI Grok CLI into ~/.grok/bin and symlink to ~/.local/bin
+  startup:
+    - command:
+        - bash
+        - -c
+        - |
+          # 1. Ensure config.toml has YOLO / always-approve permission mode
+          mkdir -p /home/agent/.grok
+          if [ ! -f /home/agent/.grok/config.toml ]; then
+            cat > /home/agent/.grok/config.toml << 'EOF'
+          [ui]
+          permission_mode = "always-approve"
+          EOF
+          else
+            if ! grep -q "\[ui\]" /home/agent/.grok/config.toml 2>/dev/null; then
+              cat >> /home/agent/.grok/config.toml << 'EOF'
+
+          [ui]
+          permission_mode = "always-approve"
+          EOF
+            elif ! grep -q "permission_mode" /home/agent/.grok/config.toml 2>/dev/null; then
+              sed -i '/\[ui\]/a permission_mode = "always-approve"' /home/agent/.grok/config.toml
+            fi
+          fi
+
+          # 2. Add ~/.grok/bin to persistent PATH
+          if [ -f /etc/sandbox-persistent.sh ] && ! grep -q "/home/agent/.grok/bin" /etc/sandbox-persistent.sh 2>/dev/null; then
+            echo 'export PATH="/home/agent/.grok/bin:$PATH"' >> /etc/sandbox-persistent.sh
+          fi
+      user: "1000"
+      description: Configure Grok YOLO mode and PATH

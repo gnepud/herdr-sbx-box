@@ -94,6 +94,31 @@ credentials:
         template: '{"claudeAiOauth":{"accessToken":"{{.AccessToken}}","refreshToken":"{{.RefreshToken}}","expiresAt":{{.ExpiresAt}},"scopes":{{.ScopesJSON}}}{{if .PrimaryApiKey}},"primaryApiKey":"{{.PrimaryApiKey}}"{{end}}}'
       skipIfEnv:
         - ANTHROPIC_API_KEY
+  - service: xai
+    description: xAI API key or Grok OAuth session used by Grok
+    required: false
+    apiKey:
+      name: XAI_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: api.x.ai
+          header: Authorization
+          format: "Bearer %s"
+        - domain: auth.x.ai
+          header: Authorization
+          format: "Bearer %s"
+    oauth:
+      tokenEndpoint:
+        host: auth.x.ai
+        path: /oauth2/token
+      sentinels:
+        accessToken: xai-oat01-proxy-managed
+        refreshToken: xai-ort01-proxy-managed
+      credentialFile:
+        path: "~/.grok/auth.json"
+        template: '{"https://accounts.x.ai/sign-in":{"key":"{{.AccessToken}}","token_type":"Bearer","refresh_token":"{{.RefreshToken}}","expires_at":{{.ExpiresAt}}}}'
+      skipIfEnv:
+        - XAI_API_KEY
 
 environment:
   variables:
@@ -112,7 +137,7 @@ setup:
         - bash
         - -c
         - |
-          export PATH="/home/agent/.local/bin:/usr/local/share/npm-global/bin:$PATH"
+          export PATH="/home/agent/.grok/bin:/home/agent/.local/bin:/usr/local/share/npm-global/bin:$PATH"
           if command -v codex >/dev/null 2>&1; then
             mkdir -p "$HOME/.codex"
             herdr integration install codex
@@ -128,6 +153,10 @@ setup:
           if command -v claude >/dev/null 2>&1; then
             mkdir -p "$HOME/.claude"
             herdr integration install claude
+          fi
+          if command -v grok >/dev/null 2>&1; then
+            mkdir -p "$HOME/.grok/hooks"
+            herdr integration install grok
           fi
       user: "1000"
       description: Auto-configure Herdr integrations for installed agents
