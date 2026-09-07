@@ -42,7 +42,7 @@ All agents are pre-configured to run out of the box in **YOLO mode** (zero confi
 ## Quick Start
 
 ### Prerequisites
-- Docker Desktop with **Docker Sandboxes (`sbx`)** installed and enabled (`sbx version`).
+- Docker Desktop with **Docker Sandboxes (`sbx`)** v0.42+ installed and enabled (`sbx version`).
 
 ### Option A: Direct Remote Run (Zero Clone)
 
@@ -52,13 +52,13 @@ You can launch the sandbox directly from GitHub without cloning the repo:
 # Launch Herdr + Claude + Codex + Grok + Pi + Antigravity
 sbx run \
   --name my-herdr-box \
-  --kit "git+https://github.com/gnepud/herdr-sbx-box.git#dir=herdr-sbx-kit" \
   --kit "git+https://github.com/gnepud/herdr-sbx-box.git#dir=claude-mixin-kit" \
   --kit "git+https://github.com/gnepud/herdr-sbx-box.git#dir=codex-mixin-kit" \
   --kit "git+https://github.com/gnepud/herdr-sbx-box.git#dir=grok-mixin-kit" \
   --kit "git+https://github.com/gnepud/herdr-sbx-box.git#dir=pi-mixin-kit" \
   --kit "git+https://github.com/gnepud/herdr-sbx-box.git#dir=agy-mixin-kit" \
-  herdr .
+  "git+https://github.com/gnepud/herdr-sbx-box.git#dir=herdr-sbx-kit" \
+  .
 ```
 
 ### Option B: Local Clone
@@ -71,13 +71,13 @@ cd herdr-sbx-box
 # 2. Launch with local kits
 sbx run \
   --name my-herdr-box \
-  --kit ./herdr-sbx-kit \
   --kit ./claude-mixin-kit \
   --kit ./codex-mixin-kit \
   --kit ./grok-mixin-kit \
   --kit ./pi-mixin-kit \
   --kit ./agy-mixin-kit \
-  herdr .
+  ./herdr-sbx-kit \
+  .
 ```
 
 ### Custom Combinations (Mix & Match)
@@ -87,10 +87,10 @@ Stack only the agents you want. For example, Herdr + Claude + Grok:
 ```bash
 sbx run \
   --name claude-grok-box \
-  --kit "git+https://github.com/gnepud/herdr-sbx-box.git#dir=herdr-sbx-kit" \
   --kit "git+https://github.com/gnepud/herdr-sbx-box.git#dir=claude-mixin-kit" \
   --kit "git+https://github.com/gnepud/herdr-sbx-box.git#dir=grok-mixin-kit" \
-  herdr .
+  "git+https://github.com/gnepud/herdr-sbx-box.git#dir=herdr-sbx-kit" \
+  .
 ```
 
 ---
@@ -151,11 +151,11 @@ herdr integration status
 
 Expected `herdr integration status` output:
 ```text
-claude: current (v8) (/home/agent/.claude/hooks/herdr-agent-state.sh)
+claude: current (v9) (/home/agent/.claude/hooks/herdr-agent-state.sh)
 codex: current (v8) (/home/agent/.codex/herdr-agent-state.sh)
 grok: current (v1) (/home/agent/.grok/hooks/herdr-agent-state.sh)
 pi: current (v8) (/home/agent/.pi/agent/extensions/herdr-agent-state.ts)
-antigravity-cli: current (v2) (/home/agent/.gemini/config/hooks/herdr-agent-state.sh)
+antigravity-cli: current (v3) (/home/agent/.gemini/config/hooks/herdr-agent-state.sh)
 ```
 
 ---

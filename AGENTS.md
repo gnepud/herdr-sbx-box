@@ -7,6 +7,7 @@ Universal rules and development invariants for adding and maintaining agent kits
 - **Agent Mixins**: All AI coding harnesses must be standalone `kind: mixin` kits.
 
 ## 2. sbx Engine & Credential Rules
+- **Positional Kit Reference (sbx >= v0.42)**: `sbx run` and `sbx create` accept the base sandbox kit reference directly as the positional argument (`sbx run [flags] <sandbox-kit-ref> [path]`). The `--kit` flag is exclusively used for mixins.
 - **OAuth Restriction**: `oauth:` is only valid on `kind: sandbox`. Never declare `oauth:` in a mixin (causes HTTP 400). Host OAuth must be declared centrally in `herdr-sbx-kit`.
 - **No Duplicate Services**: A `service:` cannot be declared in both base and mixin kits. Put shared host secrets in `herdr-sbx-kit` with `required: false`.
 
