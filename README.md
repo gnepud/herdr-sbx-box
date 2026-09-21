@@ -43,6 +43,10 @@ All agents are pre-configured to run out of the box in **YOLO mode** (zero confi
 
 ### Prerequisites
 - Docker Desktop with **Docker Sandboxes (`sbx`)** v0.42+ installed and enabled (`sbx version`).
+- **Trust Remote Kit Sources**: By default, `sbx` only permits kits from Docker Hub (`docker.io/`). To run kits directly from GitHub (Option A), authorize the repository namespace in your host settings:
+  ```bash
+  sbx settings set kit.allowedSources '["docker.io/","github.com/gnepud/"]'
+  ```
 
 ### Option A: Direct Remote Run (Zero Clone)
 
