@@ -15,10 +15,14 @@ permissions:
   network:
     allow:
       - "**"
-      # Herdr installer manifest and GitHub release binaries
-      #- "herdr.dev:443"
-      #- "github.com:443"
-      #- "objects.githubusercontent.com:443"
+      - api.openai.com
+      - openai.com
+      - api.anthropic.com
+      - console.anthropic.com
+      - claude.ai
+      - mcp-proxy.anthropic.com
+      - api.x.ai
+      - auth.x.ai
 
 credentials:
   - service: antigravity

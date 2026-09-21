@@ -13,10 +13,9 @@ permissions:
   network:
     allow:
       - "**"
-      #- registry.npmjs.org
-      #- openrouter.ai
-      #- api.deepseek.com
-      #- api.xiaomimimo.com
+      - openrouter.ai
+      - api.deepseek.com
+      - api.xiaomimimo.com
 
 credentials:
   - service: openrouter
