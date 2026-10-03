@@ -25,24 +25,6 @@ permissions:
       - auth.x.ai
 
 credentials:
-  - service: antigravity
-    description: Google OAuth session used by Antigravity CLI
-    oauth:
-      tokenEndpoint:
-        host: oauth2.googleapis.com
-        path: /token
-      resourceHosts:
-        - cloudaicompanion.googleapis.com
-        - cloudcode-pa.googleapis.com
-        - daily-cloudcode-pa.googleapis.com
-        - generativelanguage.googleapis.com
-        - www.googleapis.com
-      sentinels:
-        accessToken: agy-oauth-access-proxy-managed
-        refreshToken: agy-oauth-refresh-proxy-managed
-      credentialFile:
-        path: "~/.gemini/antigravity-cli/antigravity-oauth-token"
-        template: '{"token":{"access_token":"{{.AccessToken}}","token_type":"Bearer","refresh_token":"{{.RefreshToken}}","expiry":"9999-12-31T23:59:59Z"},"auth_method":"consumer"}'
   - service: openai
     description: OpenAI API key or ChatGPT OAuth session used by Codex
     required: false
@@ -67,6 +49,24 @@ credentials:
         refreshToken: oai-ort01-proxy-managed
       skipIfEnv:
         - OPENAI_API_KEY
+  - service: antigravity
+    description: Google OAuth session used by Antigravity CLI
+    oauth:
+      tokenEndpoint:
+        host: oauth2.googleapis.com
+        path: /token
+      resourceHosts:
+        - cloudaicompanion.googleapis.com
+        - cloudcode-pa.googleapis.com
+        - daily-cloudcode-pa.googleapis.com
+        - generativelanguage.googleapis.com
+        - www.googleapis.com
+      sentinels:
+        accessToken: agy-oauth-access-proxy-managed
+        refreshToken: agy-oauth-refresh-proxy-managed
+      credentialFile:
+        path: "~/.gemini/antigravity-cli/antigravity-oauth-token"
+        template: '{"token":{"access_token":"{{.AccessToken}}","token_type":"Bearer","refresh_token":"{{.RefreshToken}}","expiry":"9999-12-31T23:59:59Z"},"auth_method":"consumer"}'
   - service: anthropic
     description: Anthropic API key or Claude OAuth session used by Claude Code
     required: false

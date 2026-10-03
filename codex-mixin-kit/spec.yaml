@@ -91,9 +91,8 @@ setup:
               cat >> "$cfg" << EOF
 
           [mcp_servers.mcp-gateway]
-          type = "http"
           url = "$MCP_GATEWAY_URL"
-          [mcp_servers.mcp-gateway.headers]
+          [mcp_servers.mcp-gateway.http_headers]
           Authorization = "Bearer ${MCP_SENTINEL_TOKEN_NAME:-}"
           EOF
             fi
