@@ -8,7 +8,7 @@ licenses:
   - Apache-2.0
 
 sandbox:
-  image: docker/sandbox-templates:shell-docker
+  image: docker.io/sbx/shell-docker-image
   entrypoint: [herdr]
 
 permissions:
