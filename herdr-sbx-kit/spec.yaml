@@ -166,6 +166,10 @@ setup:
             mkdir -p "$HOME/.config/opencode"
             herdr integration install opencode
           fi
+          if command -v omp >/dev/null 2>&1; then
+            mkdir -p "$HOME/.omp/agent/extensions"
+            herdr integration install omp
+          fi
       user: "1000"
       description: Auto-configure Herdr integrations for installed agents
   files:

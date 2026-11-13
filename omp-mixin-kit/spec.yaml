@@ -1,0 +1,50 @@
+schemaVersion: "2"
+kind: mixin
+name: omp
+displayName: OMP (Oh My Pi)
+description: >-
+  Add Can Bölük's OMP (Oh My Pi) coding agent in YOLO mode to an existing Docker Sandbox.
+sourceURL: https://github.com/can1357/oh-my-pi
+licenses:
+  - MIT
+
+permissions:
+  network:
+    allow:
+      - "**"
+
+environment:
+  variables:
+    OMP_HOME: /home/agent/.omp
+
+setup:
+  install:
+    - command: |
+        set -eu
+        curl -fsSL https://omp.sh/install | sh
+        /home/agent/.local/bin/omp --version
+      user: "1000"
+      description: Install OMP (Oh My Pi) CLI into ~/.local/bin
+  startup:
+    - command:
+        - bash
+        - -c
+        - |
+          export PATH="/home/agent/.local/bin:/usr/local/share/npm-global/bin:$PATH"
+
+          # 1. Ensure ~/.omp/agent and extension directories exist
+          mkdir -p /home/agent/.omp/agent/extensions
+
+          # 2. Seed YOLO approval mode in ~/.omp/agent/config.yml
+          if [ ! -f /home/agent/.omp/agent/config.yml ]; then
+            cat > /home/agent/.omp/agent/config.yml << 'EOF'
+          tools:
+            approvalMode: yolo
+          EOF
+          else
+            if ! grep -q "approvalMode" /home/agent/.omp/agent/config.yml 2>/dev/null; then
+              echo -e "\ntools:\n  approvalMode: yolo" >> /home/agent/.omp/agent/config.yml
+            fi
+          fi
+      user: "1000"
+      description: Configure OMP YOLO mode and directories
