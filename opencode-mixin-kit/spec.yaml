@@ -1,0 +1,65 @@
+schemaVersion: "2"
+kind: mixin
+name: opencode
+displayName: OpenCode CLI
+description: >-
+  Add OpenCode CLI in YOLO mode to an existing Docker Sandbox.
+sourceURL: https://github.com/anomalyco/opencode
+licenses:
+  - MIT
+
+permissions:
+  network:
+    allow:
+      - "**"
+
+environment:
+  variables:
+    OPENCODE_CONFIG_DIR: /home/agent/.config/opencode
+
+setup:
+  install:
+    - command: |
+        set -eu
+        curl -fsSL https://opencode.ai/v2/install | bash
+        mkdir -p /home/agent/.local/bin
+        ln -sf /home/agent/.opencode/bin/opencode /home/agent/.local/bin/opencode
+        /home/agent/.local/bin/opencode --version
+      user: "1000"
+      description: Install OpenCode CLI into ~/.opencode/bin and symlink to ~/.local/bin
+  startup:
+    - command:
+        - bash
+        - -c
+        - |
+          export PATH="/home/agent/.opencode/bin:/home/agent/.local/bin:/usr/local/share/npm-global/bin:$PATH"
+
+          # 1. Ensure ~/.config/opencode directory exists
+          mkdir -p /home/agent/.config/opencode
+
+          # 2. Seed YOLO permission mode and update policy in opencode.json
+          if [ ! -f /home/agent/.config/opencode/opencode.json ]; then
+            cat > /home/agent/.config/opencode/opencode.json << 'EOF'
+          {
+            "$schema": "https://opencode.ai/config.json",
+            "update": "disable",
+            "permission": {
+              "*": "allow"
+            }
+          }
+          EOF
+          else
+            jq '.update = "disable" | .permission = {"*": "allow"}' \
+              /home/agent/.config/opencode/opencode.json > /home/agent/.config/opencode/opencode.json.tmp && \
+              mv /home/agent/.config/opencode/opencode.json.tmp /home/agent/.config/opencode/opencode.json
+          fi
+
+          # 3. Add ~/.opencode/bin to persistent PATH
+          if [ -f /etc/sandbox-persistent.sh ] && ! grep -q "/home/agent/.opencode/bin" /etc/sandbox-persistent.sh 2>/dev/null; then
+            echo 'export PATH="/home/agent/.opencode/bin:$PATH"' >> /etc/sandbox-persistent.sh
+          fi
+          if [ -f /home/agent/.bashrc ] && ! grep -q "/home/agent/.opencode/bin" /home/agent/.bashrc 2>/dev/null; then
+            echo 'export PATH="/home/agent/.opencode/bin:$PATH"' >> /home/agent/.bashrc
+          fi
+      user: "1000"
+      description: Configure OpenCode YOLO mode, update policy, and PATH

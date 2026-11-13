@@ -141,7 +141,7 @@ setup:
         - bash
         - -c
         - |
-          export PATH="/home/agent/.grok/bin:/home/agent/.local/bin:/usr/local/share/npm-global/bin:$PATH"
+          export PATH="/home/agent/.opencode/bin:/home/agent/.grok/bin:/home/agent/.local/bin:/usr/local/share/npm-global/bin:$PATH"
           if command -v codex >/dev/null 2>&1; then
             mkdir -p "$HOME/.codex"
             herdr integration install codex
@@ -161,6 +161,10 @@ setup:
           if command -v grok >/dev/null 2>&1; then
             mkdir -p "$HOME/.grok/hooks"
             herdr integration install grok
+          fi
+          if command -v opencode >/dev/null 2>&1; then
+            mkdir -p "$HOME/.config/opencode"
+            herdr integration install opencode
           fi
       user: "1000"
       description: Auto-configure Herdr integrations for installed agents
